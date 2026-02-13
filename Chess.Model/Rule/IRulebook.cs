@@ -18,8 +18,9 @@ namespace Chess.Model.Rule
         /// <summary>
         /// Creates a new chess game, according to the rulebook.
         /// </summary>
+        /// <param name="isChess960">A value indicating whether the chess game should be a chess960 game.</param>
         /// <returns>The newly created chess game.</returns>
-        ChessGame CreateGame();
+        ChessGame CreateGame(bool isChess960 = false);
 
         /// <summary>
         /// Gets the status of a chess game, according to the rulebook.

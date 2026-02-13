@@ -23,12 +23,12 @@ namespace Chess.View.Window
         /// <summary>
         /// Represents the view model of the window.
         /// </summary>
-        private readonly ChessGameVM game;
+        private ChessGameVM game;
 
         /// <summary>
         /// Provides the functionality to extract promotions from a sequence of updates.
         /// </summary>
-        private readonly PromotionSelector promotionSelector;
+        private PromotionSelector promotionSelector;
 
         /// <summary>
         /// Initializes a new instance of the <see cref="MainWindow"/> class.
@@ -36,7 +36,18 @@ namespace Chess.View.Window
         public MainWindow()
         {
             this.InitializeComponent();
-            this.game = new ChessGameVM(this.Choose);
+            this.Loaded += this.MainWindowLoaded;
+        }
+
+        private void MainWindowLoaded(object sender, RoutedEventArgs e)
+        {
+            this.Loaded -= this.MainWindowLoaded;
+
+            var gameTypes = Enum.GetValues(typeof(GameType)) as GameType[];
+            var launchWindow = new LaunchWindow() { Owner = this };
+            var selectedGameType = launchWindow.Show(gameTypes);
+
+            this.game = new ChessGameVM(this.Choose, selectedGameType);
             this.promotionSelector = new PromotionSelector();
             this.DataContext = this.game;
         }

@@ -11,6 +11,7 @@ namespace Chess.Model.Rule
     using Chess.Model.Game;
     using Chess.Model.Piece;
     using Chess.Model.Visitor;
+    using System;
     using System.Collections.Generic;
     using System.Collections.Immutable;
     using System.Linq;
@@ -54,8 +55,36 @@ namespace Chess.Model.Rule
         /// Creates a new chess game according to the standard rulebook.
         /// </summary>
         /// <returns>The newly created chess game.</returns>
-        public ChessGame CreateGame()
+        public ChessGame CreateGame(bool isChess960 = false)
         {
+            IEnumerable<PlacedPiece> makeBaseLine960(int row, Color color, int[] baseOrder)
+            {
+                if (baseOrder == null)
+                {
+                    foreach (var piece in makeBaseLine(row, color))
+                    {
+                        yield return piece;
+                    }
+                    yield break;
+                }
+
+                for (int col = 0; col < 8; col++)
+                {
+                    int pieceEnum = baseOrder[col];
+
+                    ChessPiece piece = pieceEnum switch
+                    {
+                        (int)PieceEnum.Rook => new Rook(color),
+                        (int)PieceEnum.Knight => new Knight(color),
+                        (int)PieceEnum.Bishop => new Bishop(color),
+                        (int)PieceEnum.Queen => new Queen(color),
+                        (int)PieceEnum.King => new King(color),
+                        _ => throw new InvalidOperationException("Invalid piece enum value.")
+                    };
+                    yield return new PlacedPiece(new Position(row, col), piece);
+                }
+            }
+
             IEnumerable<PlacedPiece> makeBaseLine(int row, Color color)
             {
                 yield return new PlacedPiece(new Position(row, 0), new Rook(color));
@@ -68,24 +97,83 @@ namespace Chess.Model.Rule
                 yield return new PlacedPiece(new Position(row, 7), new Rook(color));
             }
 
+            int[] makeBaseOrder960(int whiteRow, int blackRow)
+            {
+                int[] baseOrder = new int[8];
+
+                Random random = new Random((int)DateTime.Now.Ticks);
+
+                int bishopColumn1 = random.Next(0, 4) * 2;
+                int bishopColumn2 = random.Next(0, 4) * 2 + 1;
+
+                int rooksPlaced = 0;
+                bool kingPlaced = false;
+                int knightsPlaced = 0;
+                bool queenPlaced = false;
+                for (int col = 0; col < 8; col++)
+                {
+                    if (col == bishopColumn1 || col == bishopColumn2)
+                    {
+                        baseOrder[col] = (int)PieceEnum.Bishop;
+                        continue;
+                    }
+
+                    int selectedPiece = -1;
+                    bool canPlacePiece = false;
+                    while (!canPlacePiece)
+                    {
+                        selectedPiece = random.Next(1, 6);
+                        if (selectedPiece != (int)PieceEnum.Bishop)
+                        {
+                            if (selectedPiece == (int)PieceEnum.Knight && knightsPlaced < 2)
+                            {
+                                knightsPlaced++;
+                                canPlacePiece = true;
+                            }
+                            else if (selectedPiece == (int)PieceEnum.Queen && !queenPlaced)
+                            {
+                                queenPlaced = true;
+                                canPlacePiece = true;
+                            }
+                            else if (selectedPiece == (int)PieceEnum.Rook && 
+                                ((rooksPlaced == 0 && !kingPlaced) || (rooksPlaced == 1 && kingPlaced)))
+                            {
+                                rooksPlaced++;
+                                canPlacePiece = true;
+                            }
+                            else if (selectedPiece == (int)PieceEnum.King && !kingPlaced && rooksPlaced == 1)
+                            {
+                                kingPlaced = true;
+                                canPlacePiece = true;
+                            }
+                        }
+                    }
+
+                    baseOrder[col] = selectedPiece;
+                }
+                return baseOrder;
+            }
+
             IEnumerable<PlacedPiece> makePawns(int row, Color color) =>
                 Enumerable.Range(0, 8).Select(
                     i => new PlacedPiece(new Position(row, i), new Pawn(color))
                 );
 
-            IImmutableDictionary<Position, ChessPiece> makePieces(int pawnRow, int baseRow, Color color)
+            IImmutableDictionary<Position, ChessPiece> makePieces(int pawnRow, int baseRow, Color color, int[] baseOrder = null)
             {
                 var pawns = makePawns(pawnRow, color);
-                var baseLine = makeBaseLine(baseRow, color);
+                var baseLine = makeBaseLine960(baseRow, color, baseOrder);
                 var pieces = baseLine.Union(pawns);
                 var empty = ImmutableSortedDictionary.Create<Position, ChessPiece>(PositionComparer.DefaultComparer);
                 return pieces.Aggregate(empty, (s, p) => s.Add(p.Position, p.Piece));
             }
 
+            var baseOrder960 = isChess960 ? makeBaseOrder960(0, 7) : null;
+
             var whitePlayer = new Player(Color.White);
-            var whitePieces = makePieces(1, 0, Color.White);
+            var whitePieces = makePieces(1, 0, Color.White, baseOrder960);
             var blackPlayer = new Player(Color.Black);
-            var blackPieces = makePieces(6, 7, Color.Black);
+            var blackPieces = makePieces(6, 7, Color.Black, baseOrder960);
             var board = new Board(whitePieces.AddRange(blackPieces));
 
             return new ChessGame(board, whitePlayer, blackPlayer);

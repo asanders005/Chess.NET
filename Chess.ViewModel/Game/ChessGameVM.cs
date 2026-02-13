@@ -46,6 +46,11 @@ namespace Chess.ViewModel.Game
         private ChessGame game;
 
         /// <summary>
+        /// Represents the selected game type, which is used to determine the initial chess board setup.
+        /// </summary>
+        private GameType selectedGameType;
+
+        /// <summary>
         /// Represents the currently presented chess board.
         /// </summary>
         private BoardVM board;
@@ -54,10 +59,11 @@ namespace Chess.ViewModel.Game
         /// Initializes a new instance of the <see cref="ChessGameVM"/> class.
         /// </summary>
         /// <param name="updateSelector">The disambiguation mechanism if multiple updates are available for a target field.</param>
-        public ChessGameVM(Func<IList<Update>, Update> updateSelector)
+        public ChessGameVM(Func<IList<Update>, Update> updateSelector, GameType selectedGameType)
         {
+            this.selectedGameType = selectedGameType;
             this.rulebook = new StandardRulebook();
-            this.Game = this.rulebook.CreateGame();
+            this.Game = this.rulebook.CreateGame(selectedGameType == GameType.Chess960);
             this.board = new BoardVM(this.Game.Board);
             this.updateSelector = updateSelector;
             this.negator = new CommandNegator();
@@ -122,7 +128,7 @@ namespace Chess.ViewModel.Game
                     () => true,
                     () =>
                     {
-                        this.Game = this.rulebook.CreateGame();
+                        this.Game = this.rulebook.CreateGame(this.selectedGameType == GameType.Chess960);
                         this.Board = new BoardVM(this.Game.Board);
                         this.OnPropertyChanged(nameof(this.Status));
                     }
