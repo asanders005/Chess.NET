@@ -136,6 +136,24 @@ namespace Chess.ViewModel.Game
             }
         }
 
+        public GenericCommand ChangeGameTypeCommand
+        {
+            get
+            {
+                return new GenericCommand
+                (
+                    () => true,
+                    () =>
+                    {
+                        this.selectedGameType = this.selectedGameType == GameType.Chess ? GameType.Chess960 : GameType.Chess;
+                        this.Game = this.rulebook.CreateGame(this.selectedGameType == GameType.Chess960);
+                        this.Board = new BoardVM(this.Game.Board);
+                        this.OnPropertyChanged(nameof(this.Status));
+                    }
+                );
+            }
+        }
+
         /// <summary>
         /// Gets the command that reverts the last action of the presented chess game.
         /// </summary>
