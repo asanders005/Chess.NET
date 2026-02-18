@@ -50,6 +50,8 @@ namespace Chess.ViewModel.Game
         /// </summary>
         private GameType selectedGameType;
 
+        public GameType SelectedGameType { get => selectedGameType; }
+
         /// <summary>
         /// Represents the currently presented chess board.
         /// </summary>
@@ -136,6 +138,10 @@ namespace Chess.ViewModel.Game
             }
         }
 
+        /// <summary>
+        /// Gets the command that changes the game type of the presented chess game (i.e., from standard chess to chess960 and vice versa).
+        /// </summary>
+        /// <value>The command that changes the game type of the presented chess game.</value>
         public GenericCommand ChangeGameTypeCommand
         {
             get
